@@ -1,4 +1,4 @@
-EXCHANGE_RATES = {
+CURRENCIES = {
   usd: 1.7408,
   eur: 1.9557,
   gbp: 2.6415,
@@ -6,7 +6,7 @@ EXCHANGE_RATES = {
 }
 
 def convert_to_bgn(price, currency)
-  (price * EXCHANGE_RATES[currency]).round(2)
+  (price * CURRENCIES[currency]).round(2)
 end
 
 def compare_prices(first_price, first_currency, second_price, second_currency)
