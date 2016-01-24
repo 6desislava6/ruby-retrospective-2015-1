@@ -1,27 +1,28 @@
 def move(snake, direction)
-  snake.drop(1) << new_head(snake, direction)
-  # snake[1..-1] << new_head(snake, direction)
+  snake.drop(1) << make_new_head(snake, direction)
 end
 
 def grow(snake, direction)
-  snake.dup << new_head(snake, direction)
+  snake.dup << make_new_head(snake, direction)
 end
 
 def new_food(food, snake, dimensions)
   free_positions(dimensions[:width],
                  dimensions[:height],
                  food,
-                 snake).shuffle().first
+                 snake).sample
+end
+
+def make_new_head(snake, direction)
+  [snake.last[0] + direction[0], snake.last[1] + direction[1]]
 end
 
 def obstacle_ahead?(snake, direction, dimensions)
   new_snake = move(snake, direction)
-  newly_head = new_snake.last
 
-  outside_x      = outside_field?(newly_head[0], dimensions[:width])
-  outside_y      = outside_field?(newly_head[1], dimensions[:height])
-  self_collision = new_snake[0...-1].include? newly_head
-  outside_x or outside_y or self_collision
+  return true if outside_field?(new_snake.last[0], dimensions[:width])
+  return true if outside_field?(new_snake.last[1], dimensions[:height])
+  new_snake[0...-1].include? new_snake.last or snake.include? new_snake.last
 end
 
 def danger?(snake, direction, dimensions)
@@ -29,9 +30,6 @@ def danger?(snake, direction, dimensions)
   obstacle_ahead?(move(snake, direction), direction, dimensions)
 end
 
-def new_head(snake, direction)
-  [snake.last[0] + direction[0], snake.last[1] + direction[1]]
-end
 
 def outside_field?(coordinate, length)
   coordinate < 0 or coordinate >= length

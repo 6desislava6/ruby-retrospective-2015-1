@@ -43,7 +43,7 @@ class PrimeSequence
   def each
     number, counter = 2, 0
     while counter < @limit
-      if number.is_prime?
+      if number.prime?
         yield(number)
         counter += 1
       end
@@ -53,7 +53,7 @@ class PrimeSequence
 end
 
 class FibonacciSequence
-   include Enumerable
+  include Enumerable
 
   def initialize(limit, first: 1, second: 1)
     @limit = limit
@@ -65,7 +65,7 @@ class FibonacciSequence
     first, second = @first, @second
     @limit.times do
       yield first
-      first, second = second, first+second
+      first, second = second, first + second
     end
   end
 end
@@ -92,7 +92,7 @@ module DrunkenMathematician
   def meaningless(count)
     return 1 if count == 0
     groups = RationalSequence.new(count).to_a.group_by do |number|
-      (number.numerator).is_prime? or (number.denominator).is_prime?
+      number.numerator.prime? or (number.denominator).prime?
     end
     groups[true]  ||= []
     groups[false] ||= []
@@ -102,7 +102,7 @@ module DrunkenMathematician
   def aimless(count)
     return 0 if count == 0
     numbers = PrimeSequence.new(count).each_slice(2).map do |pair|
-      pair.length == 2? Rational(pair.first, pair.last) : Rational(pair.first)
+      pair.length == 2 ? Rational(pair.first, pair.last) : Rational(pair.first)
     end
     numbers.reduce(:+)
   end
@@ -115,7 +115,7 @@ module DrunkenMathematician
 end
 
 class Integer
-def is_prime?
-    self == 1 ? false : (2..self / 2).none?{|i| self % i == 0}
+  def prime?
+    self == 1 ? false : (2..self / 2).none? { |i| self % i == 0 }
   end
 end

@@ -25,19 +25,36 @@ module Sizer
   end
 end
 
-
 class Deck
   include Sizer
   include Enumerable
 
+  class Hand
+    include Sizer
+    def initialize(cards)
+      @cards = cards
+    end
+
+    def king_and_queen?(cards)
+      kings_queens = cards.select do |card|
+        card.rank == :queen or card.rank == :king
+      end
+      kings_queens.permutation(2).any? do | (card_first, card_second) |
+        equal_suits = card_first.suit == card_second.suit
+        different_ranks = card_first.rank != card_second.rank
+        equal_suits and different_ranks
+      end
+    end
+  end
+
   attr_accessor :cards
   HAND_SIZE = 52
   RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, :jack, :queen, :king, :ace]
-  SUITS =[:spades, :hearts, :diamonds,:clubs]
+  SUITS = [:spades, :hearts, :diamonds, :clubs]
 
   class << self
     def generate_full_deck
-      self::RANKS.product(self::SUITS).map{|x| Card.new(x.first, x.last)}
+      self::RANKS.product(self::SUITS).map{ |x| Card.new(x.first, x.last) }
     end
 
     def sorting_ranks_suit(ranks, suits, card_first, card_second)
@@ -90,28 +107,23 @@ class Deck
   end
 
   def to_s
-    @cards.reduce("") {|whole_string, x| whole_string + "\n" + x.to_s}.strip
+    @cards.join("\n").strip
   end
 
-  def deal
+  def deal_elements
     deal_elements = []
     smaller = [self::class::HAND_SIZE,  @cards.size].min
-    1.upto(smaller) {deal_elements << draw_top_card}
-    self::class.class_variable_get(:@@hand).new(deal_elements)
+    1.upto(smaller) { deal_elements << draw_top_card }
+    deal_elements
   end
-
 end
 
 
 class WarDeck < Deck
   RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, :jack, :queen, :king, :ace]
   HAND_SIZE = 26
-  @@hand = Class.new do
-    include Sizer
 
-    def initialize(cards)
-      @cards = cards
-    end
+  class HandWarDeck < Hand
 
     def play_card
       @cards.pop
@@ -121,6 +133,10 @@ class WarDeck < Deck
       @cards.size <= 3
     end
   end
+
+  def deal
+    HandWarDeck.new(deal_elements)
+  end
 end
 
 
@@ -129,42 +145,11 @@ class BeloteDeck < Deck
 
   HAND_SIZE = 8
 
-  def self.consecutive?(cards)
-    # проверява дали cards са последователни
-    all_consecutive = true
-    cards.each_cons(2) do | (card_first, card_second) |
-      # -1 защото са сортирани в намаляващ ред
-      if RANKS.index(card_first.rank) - 1 != RANKS.index(card_second.rank)
-        all_consecutive = false
-      end
-    end
-    all_consecutive
+  def deal
+    HandBeloteDeck.new(deal_elements)
   end
 
-  def self.sequence(number, cards)
-    # Групираме ги по бои и после ще проверим дали има n последователни
-    # от всяка бои.
-    sorted = cards.sort(&BeloteDeck.method(:sorting)).group_by do |card|
-      card.suit
-    end
-    # Разглеждаме ги по боя, дали вътре има number последователни
-    sorted.each do |cards|
-      cards = cards.last
-      result = cards.each_cons(number).reduce(false) do |result, group_cards|
-        result or consecutive?(group_cards)
-      end
-      return result if true
-    end
-    # връща false, ако вече не е върнало true
-    false
-  end
-
-  @@hand = Class.new do
-    include Sizer
-
-    def initialize(cards)
-      @cards = cards
-    end
+  class HandBeloteDeck < Hand
 
     def highest_of_suit(suit)
       @cards.sort(&BeloteDeck.method(:sorting)).find do |card|
@@ -173,30 +158,23 @@ class BeloteDeck < Deck
     end
 
     def belote?
-      kings_queens = @cards.select do |card|
-        card.rank == :queen or card.rank == :king
-      end
-      kings_queens.permutation(2).any? do | (card_first, card_second) |
-        equal_suits = card_first.suit == card_second.suit
-        different_ranks = card_first.rank != card_second.rank
-        equal_suits and different_ranks
-      end
+      king_and_queen?(@cards)
     end
 
     def tierce?
-      BeloteDeck.sequence(3, @cards)
+      sequence(3, @cards)
     end
 
     def quarte?
-      BeloteDeck.sequence(4, @cards)
+      sequence(4, @cards)
     end
 
     def quint?
-      BeloteDeck.sequence(5, @cards)
+      sequence(5, @cards)
     end
 
     def carre(suit)
-      grouped_cards = @cards.group_by{|card| card.rank}
+      grouped_cards = @cards.group_by { |card| card.rank }
       grouped_cards[suit].nil? ? false : grouped_cards[suit].size == 4
     end
 
@@ -211,38 +189,46 @@ class BeloteDeck < Deck
     def carre_of_aces?
       carre(:ace)
     end
+
+    def consecutive?(cards)
+      all_consecutive = true
+      cards.each_cons(2) do | (card_first, card_second) |
+        if RANKS.index(card_first.rank) - 1 != RANKS.index(card_second.rank)
+          all_consecutive = false
+        end
+      end
+      all_consecutive
+    end
+
+    def sequence(number, cards)
+      cards.sort(&BeloteDeck.method(:sorting))
+                    .group_by { |card| card.suit }.map do |cards|
+        groups = cards.last.each_cons(number).to_a
+        groups.map! { |cards| consecutive? cards }
+        groups.any?
+      end .any?
+
+    end
   end
 end
-
 
 class SixtySixDeck < Deck
   RANKS = [9, :jack, :queen, :king, 10, :ace]
   HAND_SIZE = 6
-  @@hand = Class.new do
-    include Sizer
 
-    def initialize(cards)
-      @cards = cards
-    end
+  def deal
+    HandSixtySixDeck.new(deal_elements)
+  end
 
-    def king_and_queen?(cards)
-      kings_queens = cards.select do |card|
-        card.rank == :queen or card.rank == :king
-      end
-      kings_queens.permutation(2).any? do | (card_first, card_second) |
-        equal_suits = card_first.suit == card_second.suit
-        different_ranks = card_first.rank != card_second.rank
-        equal_suits and different_ranks
-      end
-    end
+  class HandSixtySixDeck < Hand
 
     def twenty?(trump_suit)
-      cards_no_trump_suit = @cards.reject{|card| card.suit == trump_suit}
+      cards_no_trump_suit = @cards.reject { |card| card.suit == trump_suit }
       king_and_queen?(cards_no_trump_suit)
     end
 
     def forty?(trump_suit)
-      cards_trump_suit = @cards.select{|card| card.suit == trump_suit}
+      cards_trump_suit = @cards.select { |card| card.suit == trump_suit }
       king_and_queen?(cards_trump_suit)
     end
   end
