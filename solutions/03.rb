@@ -5,16 +5,19 @@ class RationalSequence
     @limit = limit
   end
 
-  def each
+  def each_rational
     counter = 0
     row, col = 1, 1
-    while counter < @limit
+    loop do
       if row.gcd(col) == 1
         yield Rational(row, col)
-        counter += 1
       end
       row, col = calculate_direction(row, col)
     end
+  end
+
+  def each(&block)
+     enum_for(:each_rational).lazy.take(@limit).each(&block)
   end
 
   def calculate_direction(row, col)
@@ -40,15 +43,19 @@ class PrimeSequence
     @limit = limit
   end
 
-  def each
+  def each_prime
     number, counter = 2, 0
-    while counter < @limit
+    loop do
       if number.prime?
         yield(number)
         counter += 1
       end
       number += 1
     end
+  end
+
+  def each(&block)
+     enum_for(:each_prime).lazy.take(@limit).each(&block)
   end
 end
 

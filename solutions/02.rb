@@ -30,7 +30,6 @@ def danger?(snake, direction, dimensions)
   obstacle_ahead?(move(snake, direction), direction, dimensions)
 end
 
-
 def outside_field?(coordinate, length)
   coordinate < 0 or coordinate >= length
 end

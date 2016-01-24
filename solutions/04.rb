@@ -54,7 +54,7 @@ class Deck
 
   class << self
     def generate_full_deck
-      self::RANKS.product(self::SUITS).map{ |x| Card.new(x.first, x.last) }
+      self::RANKS.product(self::SUITS).map { |x| Card.new(x.first, x.last) }
     end
 
     def sorting_ranks_suit(ranks, suits, card_first, card_second)
@@ -103,7 +103,7 @@ class Deck
   end
 
   def each
-    @cards.each{|card| yield(card)}
+    @cards.each { |card| yield(card) }
   end
 
   def to_s
@@ -207,7 +207,6 @@ class BeloteDeck < Deck
         groups.map! { |cards| consecutive? cards }
         groups.any?
       end .any?
-
     end
   end
 end
